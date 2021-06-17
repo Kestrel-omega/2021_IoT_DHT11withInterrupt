@@ -1,17 +1,20 @@
 #include <Arduino.h>
 #define DHT11PIN 2 //D4
+#define TIMEOUT 5000
 
 int microTime[42];
 int dt[40];
 int cnt;
-int flag;
+int runningFlag;
+int timeoutFlag;
 
-void timeoutHandler()
+ICACHE_RAM_ATTR void timeoutHandler()
 {
-  cnt++;
-  if(cnt >=2500)
+  if(runningFlag == 1)
   {
-    cnt = 0;
+    Serial.printf("Error, DHT11 Timeout\r\n");
+    timer1_write(TIMEOUT*1250); // Timeout time == Delay * 2
+    timeoutFlag = 1;
   }
 }
 
@@ -23,6 +26,8 @@ ICACHE_RAM_ATTR void pulseHandler()
 
 int readDHTInterrupt(int *readTemp, int* readHumid)
 {
+  runningFlag = 1;
+  // DHT11 Start
   detachInterrupt(digitalPinToInterrupt(DHT11PIN));
   microTime[42] = {0,};
   cnt = 0;
@@ -55,7 +60,13 @@ int readDHTInterrupt(int *readTemp, int* readHumid)
     else
       *readTemp = *readTemp + 0;
   }
+  if(timeoutFlag == 1)
+  {
+    *readTemp = 0;
+    *readHumid = 0;
+  }
   return 1;
+  runningFlag = 0;
 }
 
 int readDHT11Polling(int *readTemp, int* readHumid)
@@ -120,9 +131,11 @@ void loop()
   cnt = 0;
   dt[cnt] = micros();
   int readTemp, readHumid;
+  timer1_enable(TIM_DIV256,TIM_EDGE,TIM_SINGLE);
+  timer1_write(TIMEOUT*1250); // Timeout time == Delay * 2
+  timer1_attachInterrupt(timeoutHandler);
   readDHTInterrupt(&readTemp, &readHumid);
-  
   Serial.printf("Temperature : %d, Humidity : %d\r\n", readTemp, readHumid);
   
-  delay(5000);
+  delay(TIMEOUT);
 }
