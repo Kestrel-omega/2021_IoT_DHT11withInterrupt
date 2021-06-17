@@ -1,3 +1,6 @@
+#include <Arduino.h>
+#define DHT11PIN 14 //D4
+
 int readDHT11(int *readTemp, int* readHumid)
 {
 
@@ -53,4 +56,17 @@ int readDHT11(int *readTemp, int* readHumid)
   //for(cnt=0;cnt<41;cnt++)
   //  Serial.printf("cnt:%d, dt[%d, %d]\r\n",cnt,dt[cnt*2],dt[cnt*2+1]);
   return 1;
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  delay(100);
+}
+
+void loop()
+{
+  int readTemp, readHumid;
+  readDHT11(&readTemp, &readHumid);
+  delay(1000);
 }
